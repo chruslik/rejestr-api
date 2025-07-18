@@ -112,7 +112,7 @@ def get_slowniki():
         klienci = [row[0] for row in conn.execute("SELECT nazwa FROM klienci")]
     return jsonify({"marki": marki, "klasy": klasy, "usterki": usterki, "klienci": klienci})
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
