@@ -96,6 +96,23 @@ def update_naprawa(naprawa_id):
 
     return jsonify({"message": "Zaktualizowano naprawę"})
 
+@app.route("/klienci", methods=["POST"])
+def dodaj_klienta():
+    data = request.get_json()
+    nazwa = data.get("nazwa")
+    if not nazwa:
+        return jsonify({"error": "Brak nazwy klienta"}), 400
+
+    with connect_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM klienci WHERE nazwa = ?", (nazwa,))
+        row = cursor.fetchone()
+        if row:
+            return jsonify({"id": row[0]})
+        cursor.execute("INSERT INTO klienci (nazwa) VALUES (?)", (nazwa,))
+        conn.commit()
+        return jsonify({"id": cursor.lastrowid})
+
 @app.route("/naprawy/<int:naprawa_id>", methods=["DELETE"])
 def delete_naprawa(naprawa_id):
     with connect_db() as conn:
