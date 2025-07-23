@@ -54,7 +54,7 @@ def get_naprawy():
 @app.route("/naprawy", methods=["POST"])
 def add_naprawa():
     data = request.json
-    klient = data["klient"].strip()
+    #klient = data["klient"].strip()
     marka = data.get("marka", "").strip()
     klasa = data.get("klasa", "").strip()
     sn = data["sn"].strip()
