@@ -113,6 +113,14 @@ def dodaj_lub_pobierz_klienta():
         conn.commit()
         return jsonify({"id": cur.lastrowid})
 
+@app.route("/maszyny", methods=["GET"])
+def get_maszyny():
+    with connect_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM maszyny")
+        maszyny = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+    return jsonify(maszyny)
+
 @app.route("/maszyny", methods=["POST"])
 def dodaj_lub_pobierz_maszyne():
     data = request.get_json()
