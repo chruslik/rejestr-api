@@ -158,7 +158,7 @@ def dodaj_naprawe():
 
 @app.route("/naprawy", methods=["GET"])
 def pobierz_naprawy():
-[23:08, 22.07.2025] ChatGPT: with connect_db() as conn:
+    with connect_db() as conn:
         cur = conn.cursor()
         cur.execute("""SELECT id, maszyna_id, data_przyjecia, data_zakonczenia, status, usterka, opis
                        FROM naprawy""")
