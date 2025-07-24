@@ -15,9 +15,25 @@ def connect_db():
 def init_db():
     with connect_db() as conn:
         c = conn.cursor()
-        c.execute("CREATE TABLE IF NOT EXISTS klienci (id INTEGER PRIMARY KEY AUTOINCREMENT, nazwa TEXT UNIQUE)")
         c.execute("""
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+            CREATE TABLE IF NOT EXISTS klienci (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nazwa TEXT
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS maszyny (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                klient_id INTEGER,
+                marka TEXT,
+                klasa TEXT,
+                numer_seryjny TEXT,
+                FOREIGN KEY (klient_id) REFERENCES klienci(id)
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS naprawy (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 maszyna_id INTEGER,
                 data_przyjecia TEXT,
                 data_zakonczenia TEXT,
