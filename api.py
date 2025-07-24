@@ -139,7 +139,6 @@ def pobierz_naprawy():
         cur = conn.cursor()
         cur.execute(query, values)
         naprawy = [dict(zip([col[0] for col in cur.description], row)) for row in cur.fetchall()]
-
     return jsonify(naprawy)
 
 @app.route("/klienci", methods=["POST"])
