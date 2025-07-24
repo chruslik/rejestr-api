@@ -168,6 +168,14 @@ def dodaj_naprawe():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def pobierz_numery_seryjne(self):
+    try:
+        resp = requests.get("https://rejestr-api.onrender.com/slowniki")
+        resp.raise_for_status()
+        return resp.json().get("numery_seryjne", [])
+    except:
+        return []
+
 @app.route("/naprawy", methods=["GET"])
 def pobierz_naprawy():
     with connect_db() as conn:
@@ -208,7 +216,15 @@ def get_slowniki():
         klasy = [row[0] for row in conn.execute("SELECT DISTINCT klasa FROM maszyny")]
         usterki = [row[0] for row in conn.execute("SELECT DISTINCT usterka FROM naprawy")]
         klienci = [row[0] for row in conn.execute("SELECT nazwa FROM klienci")]
-    return jsonify({"marki": marki, "klasy": klasy, "usterki": usterki, "klienci": klienci})
+        numery_seryjne = [row[0] for row in conn.execute("SELECT DISTINCT numer_seryjny FROM maszyny")]
+
+    return jsonify({
+        "marki": marki,
+        "klasy": klasy,
+        "usterki": usterki,
+        "klienci": klienci,
+        "numery_seryjne": numery_seryjne
+    })
 
 if __name__ == "__main__":
     init_db()
