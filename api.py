@@ -4,8 +4,8 @@ import sqlite3
 from datetime import datetime
 import os
 
-app = Flask(__name__)
-CORS(app) # pozwala na połączenie z Kivy na Androidzie
+app = Flask(name)
+CORS(app)
 
 DB_PATH = "rejestr.db"
 
@@ -15,19 +15,9 @@ def connect_db():
 def init_db():
     with connect_db() as conn:
         c = conn.cursor()
-        c.execute("CREATE TABLE IF NOT EXISTS klienci (id INTEGER PRIMARY KEY, nazwa TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS klienci (id INTEGER PRIMARY KEY AUTOINCREMENT, nazwa TEXT UNIQUE)")
         c.execute("""
-            CREATE TABLE IF NOT EXISTS maszyny (
-                id INTEGER PRIMARY KEY,
-                klient_id INTEGER,
-                marka TEXT,
-                klasa TEXT,
-                numer_seryjny TEXT,
-                FOREIGN KEY (klient_id) REFERENCES klienci(id)
-            )""")
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS naprawy (
-                id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
                 maszyna_id INTEGER,
                 data_przyjecia TEXT,
                 data_zakonczenia TEXT,
@@ -35,7 +25,8 @@ def init_db():
                 usterka TEXT,
                 opis TEXT,
                 FOREIGN KEY (maszyna_id) REFERENCES maszyny(id)
-            )""")
+            )
+        """)
         conn.commit()
 
 @app.route("/naprawy", methods=["GET"])
@@ -47,78 +38,62 @@ def get_naprawy():
                JOIN maszyny m ON n.maszyna_id = m.id
                JOIN klienci k ON m.klient_id = k.id
                ORDER BY n.id DESC"""
-    with connect_db() as conn:
-        rows = conn.execute(query).fetchall()
-    return jsonify([dict(zip(["id", "klient", "marka", "klasa", "sn", "status", "data_przyjecia", "data_zakonczenia", "usterka", "opis"], row)) for row in rows])
 
 @app.route("/naprawy", methods=["POST"])
 def add_naprawa():
     data = request.json
-    #klient = data["klient"].strip()
+    klient_nazwa = data.get("klient", "").strip()
     marka = data.get("marka", "").strip()
     klasa = data.get("klasa", "").strip()
-    sn = data["sn"].strip()
+    sn = data.get("sn", "").strip()
     usterka = data.get("usterka", "").strip()
     opis = data.get("opis", "").strip()
     data_przyjecia = data.get("data_przyjecia", datetime.now().strftime("%Y-%m-%d"))
+    status = data.get("status", "nowa")
+
+    if not klient_nazwa or not sn:
+        return jsonify({"error": "Brak klienta lub numeru seryjnego"}), 400
 
     with connect_db() as conn:
         cur = conn.cursor()
 
-        #cur.execute("SELECT id FROM klienci WHERE nazwa=?", (klient,))
-        #row = cur.fetchone()
-        #klient_id = row[0] if row else cur.execute("INSERT INTO klienci (nazwa) VALUES (?)", (klient,)).lastrowid
+        # Szukaj lub dodaj klienta
+        cur.execute("SELECT id FROM klienci WHERE nazwa = ?", (klient_nazwa,))
+        klient_row = cur.fetchone()
+        if klient_row:
+            klient_id = klient_row[0]
+        else:
+            cur.execute("INSERT INTO klienci (nazwa) VALUES (?)", (klient_nazwa,))
+            klient_id = cur.lastrowid
 
-        #cur.execute("SELECT id FROM maszyny WHERE numer_seryjny=? AND klient_id=?", (sn, klient_id))
-        #row = cur.fetchone()
-        #maszyna_id = row[0] if row else cur.execute(
-         #   "INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny) VALUES (?, ?, ?, ?)",
-          #  (klient_id, marka, klasa, sn)).lastrowid
+        # Szukaj lub dodaj maszynę
+        cur.execute("SELECT id FROM maszyny WHERE numer_seryjny = ?", (sn,))
+        maszyna_row = cur.fetchone()
+        if maszyna_row:
+        maszyna_id = maszyna_row[0]
+        else:
+            cur.execute(
+                "INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny) VALUES (?, ?, ?, ?)",
+                (klient_id, marka, klasa, sn)
+            )
+            maszyna_id = cur.lastrowid
 
-        cur.execute("INSERT INTO naprawy (maszyna_id, data_przyjecia, status, usterka, opis) VALUES (?, ?, 'nowa', ?, ?)",
-                    (maszyna_id, data_przyjecia, usterka, opis))
+        # Dodaj naprawę
+        cur.execute(
+            "INSERT INTO naprawy (maszyna_id, data_przyjecia, status, usterka, opis) VALUES (?, ?, ?, ?, ?)",
+            (maszyna_id, data_przyjecia, status, usterka, opis)
+        )
         conn.commit()
+        naprawa_id = cur.lastrowid
 
-    return jsonify({"message": "Naprawa dodana"}), 201
-
-@app.route("/naprawy/<int:naprawa_id>", methods=["PUT"])
-def update_naprawa(naprawa_id):
-    data = request.json
-    status = data.get("status")
-    data_zak = data.get("data_zakonczenia")
-    usterka = data.get("usterka")
-    opis = data.get("opis")
-
-    with connect_db() as conn:
-        conn.execute("""UPDATE naprawy SET status=?, data_zakonczenia=?, usterka=?, opis=? WHERE id=?""",
-                     (status, data_zak, usterka, opis, naprawa_id))
-        conn.commit()
-
-    return jsonify({"message": "Zaktualizowano naprawę"})
-
-@app.route("/klienci", methods=["POST"])
-def dodaj_lub_pobierz_klienta():
-    data = request.get_json()
-    nazwa = data.get("nazwa")
-    if not nazwa:
-        return jsonify({"error": "Brak nazwy klienta"}), 400
-
-    with connect_db() as conn:
-        cur = conn.cursor()
-        cur.execute("SELECT id FROM klienci WHERE nazwa = ?", (nazwa,))
-        row = cur.fetchone()
-        if row:
-            return jsonify({"id": row[0]})
-        cur.execute("INSERT INTO klienci (nazwa) VALUES (?)", (nazwa,))
-        conn.commit()
-        return jsonify({"id": cur.lastrowid})
+    return jsonify({"message": "Naprawa dodana", "id": naprawa_id}), 201
 
 @app.route("/maszyny", methods=["GET"])
 def get_maszyny():
     with connect_db() as conn:
         cur = conn.cursor()
         cur.execute("SELECT * FROM maszyny")
-        maszyny = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+        maszyny = [dict(zip([col[0] for col in cur.description], row)) for row in cur.fetchall()]
     return jsonify(maszyny)
 
 @app.route("/maszyny", methods=["POST"])
@@ -134,13 +109,42 @@ def dodaj_lub_pobierz_maszyne():
 
     with connect_db() as conn:
         cur = conn.cursor()
-        cur.execute("""SELECT id FROM maszyny WHERE klient_id = ? AND numer_seryjny = ?""",
-        (klient_id, numer_seryjny))
+        cur.execute("SELECT id FROM maszyny WHERE klient_id = ? AND numer_seryjny = ?", (klient_id, numer_seryjny))
         row = cur.fetchone()
         if row:
             return jsonify({"id": row[0]})
-        cur.execute("""INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny)
-                       VALUES (?, ?, ?, ?)""", (klient_id, marka, klasa, numer_seryjny))
+        cur.execute("INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny) VALUES (?, ?, ?, ?)",
+                    (klient_id, marka, klasa, numer_seryjny))
+        conn.commit()
+        return jsonify({"id": cur.lastrowid})
+
+@app.route("/naprawy", methods=["GET"])
+def pobierz_naprawy():
+        with connect_db() as conn:
+        cur = conn.cursor()
+        cur.execute("""SELECT n.id, k.nazwa AS klient, m.marka, m.klasa, m.numer_seryjny AS sn,
+                              n.status, n.data_przyjecia, n.data_zakonczenia, n.usterka, n.opis
+                       FROM naprawy n
+                       JOIN maszyny m ON n.maszyna_id = m.id
+                       JOIN klienci k ON m.klient_id = k.id
+                       ORDER BY n.id DESC""")
+        naprawy = [dict(zip([col[0] for col in cur.description], row)) for row in cur.fetchall()]
+    return jsonify(naprawy)
+
+@app.route("/klienci", methods=["POST"])
+def dodaj_klienta():
+    data = request.get_json()
+    nazwa = data.get("nazwa")
+    if not nazwa:
+        return jsonify({"error": "Brak nazwy klienta"}), 400
+
+    with connect_db() as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id FROM klienci WHERE nazwa = ?", (nazwa,))
+        row = cur.fetchone()
+        if row:
+            return jsonify({"id": row[0]})
+        cur.execute("INSERT INTO klienci (nazwa) VALUES (?)", (nazwa,))
         conn.commit()
         return jsonify({"id": cur.lastrowid})
 
@@ -151,8 +155,8 @@ def dodaj_naprawe():
         maszyna_id = data.get("maszyna_id")
         data_przyjecia = data.get("data_przyjecia")
         status = data.get("status", "nowa")
-        usterka = data.get("usterka")
-        opis = data.get("opis")
+        usterka = data.get("usterka", "")
+        opis = data.get("opis", "")
 
         if not maszyna_id or not data_przyjecia:
             return jsonify({"error": "Brak danych"}), 400
@@ -168,39 +172,20 @@ def dodaj_naprawe():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def pobierz_numery_seryjne(self):
-    try:
-        resp = requests.get("https://rejestr-api.onrender.com/slowniki")
-        resp.raise_for_status()
-        return resp.json().get("numery_seryjne", [])
-    except:
-        return []
-
-@app.route("/naprawy", methods=["GET"])
-def pobierz_naprawy():
-    with connect_db() as conn:
-        cur = conn.cursor()
-        cur.execute("""SELECT id, maszyna_id, data_przyjecia, data_zakonczenia, status, usterka, opis
-                       FROM naprawy""")
-        naprawy = [dict(zip([col[0] for col in cur.description], row)) for row in cur.fetchall()]
-    return jsonify(naprawy)
-
-@app.route("/klienci", methods=["POST"])
-def dodaj_klienta():
+@app.route("/naprawy/<int:naprawa_id>", methods=["PUT"])
+def update_naprawa(naprawa_id):
     data = request.get_json()
-    nazwa = data.get("nazwa")
-    if not nazwa:
-        return jsonify({"error": "Brak nazwy klienta"}), 400
+    status = data.get("status")
+    data_zak = data.get("data_zakonczenia")
+    usterka = data.get("usterka")
+    opis = data.get("opis")
 
     with connect_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM klienci WHERE nazwa = ?", (nazwa,))
-        row = cursor.fetchone()
-        if row:
-            return jsonify({"id": row[0]})
-        cursor.execute("INSERT INTO klienci (nazwa) VALUES (?)", (nazwa,))
+[09:42, 24.07.2025] ChatGPT: conn.execute("""UPDATE naprawy SET status=?, data_zakonczenia=?, usterka=?, opis=? WHERE id=?""",
+                     (status, data_zak, usterka, opis, naprawa_id))
         conn.commit()
-        return jsonify({"id": cursor.lastrowid})
+
+    return jsonify({"message": "Zaktualizowano naprawę"})
 
 @app.route("/naprawy/<int:naprawa_id>", methods=["DELETE"])
 def delete_naprawa(naprawa_id):
@@ -226,8 +211,7 @@ def get_slowniki():
         "numery_seryjne": numery_seryjne
     })
 
-if __name__ == "__main__":
+if name == "main":
     init_db()
-    port = int(os.environ.get("PORT", 5000))
+[09:42, 24.07.2025] ChatGPT: port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
-
