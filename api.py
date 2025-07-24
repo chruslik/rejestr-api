@@ -118,9 +118,9 @@ def dodaj_lub_pobierz_maszyne():
         conn.commit()
         return jsonify({"id": cur.lastrowid})
 
-@app.route("/naprawy", methods=["GET"])
+[09:42, 24.07.2025] ChatGPT: @app.route("/naprawy", methods=["GET"])
 def pobierz_naprawy():
-        with connect_db() as conn:
+    with connect_db() as conn:
         cur = conn.cursor()
         cur.execute("""SELECT n.id, k.nazwa AS klient, m.marka, m.klasa, m.numer_seryjny AS sn,
                               n.status, n.data_przyjecia, n.data_zakonczenia, n.usterka, n.opis
