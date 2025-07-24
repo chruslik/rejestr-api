@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime
 import os
 
-app = Flask(name)
+app = Flask(__name__)
 CORS(app)
 
 DB_PATH = "rejestr.db"
@@ -211,7 +211,7 @@ def get_slowniki():
         "numery_seryjne": numery_seryjne
     })
 
-if name == "main":
+if  __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
