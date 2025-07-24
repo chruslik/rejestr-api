@@ -70,7 +70,7 @@ def add_naprawa():
         cur.execute("SELECT id FROM maszyny WHERE numer_seryjny = ?", (sn,))
         maszyna_row = cur.fetchone()
         if maszyna_row:
-        maszyna_id = maszyna_row[0]
+            maszyna_id = maszyna_row[0]
         else:
             cur.execute(
                 "INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny) VALUES (?, ?, ?, ?)",
