@@ -47,24 +47,24 @@ def init_db():
 
 @app.route("/naprawy", methods=["GET"])
 def get_naprawy():
-    with connect_db() as conn:
-        cur = conn.cursor()
-        cur.execute("""SELECT n.id, k.nazwa, m.marka, m.klasa, m.numer_seryjny,
-                              n.status, n.data_przyjecia, n.data_zakonczenia,
-                              n.usterka, n.opis
-                       FROM naprawy n
-                       JOIN maszyny m ON n.maszyna_id = m.id
-                       JOIN klienci k ON m.klient_id = k.id
-                       ORDER BY n.id DESC""")
-        rows = cur.fetchall()
-    return jsonify([
-        dict(zip(["id", "klient", "marka", "klasa", "sn", "status", "data_przyjecia", "data_zakonczenia", "usterka", "opis"], row))
-        for row in rows
-    ])
-
-        except Exception as e:
-            print("Błąd:", str(e))
-            return jsonify({"error": str(e)}), 500
+    try:
+        with connect_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""SELECT n.id, k.nazwa, m.marka, m.klasa, m.numer_seryjny,
+                                  n.status, n.data_przyjecia, n.data_zakonczenia,
+                                  n.usterka, n.opis
+                           FROM naprawy n
+                           JOIN maszyny m ON n.maszyna_id = m.id
+                           JOIN klienci k ON m.klient_id = k.id
+                           ORDER BY n.id DESC""")
+            rows = cur.fetchall()
+        return jsonify([
+            dict(zip(["id", "klient", "marka", "klasa", "sn", "status", "data_przyjecia", "data_zakonczenia", "usterka", "opis"], row))
+            for row in rows
+        ])
+    except Exception as e:
+        print("Błąd:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/maszyny", methods=["GET"])
 def get_maszyny():
