@@ -78,13 +78,13 @@ def add_naprawa():
             )
             maszyna_id = cur.lastrowid
 
-        # Dodaj naprawę
-        cur.execute(
-            "INSERT INTO naprawy (maszyna_id, data_przyjecia, status, usterka, opis) VALUES (?, ?, ?, ?, ?)",
-            (maszyna_id, data_przyjecia, status, usterka, opis)
-        )
-        conn.commit()
-        naprawa_id = cur.lastrowid
+            # Dodaj naprawę
+            cur.execute(
+                "INSERT INTO naprawy (maszyna_id, data_przyjecia, status, usterka, opis) VALUES (?, ?, ?, ?, ?)",
+                (maszyna_id, data_przyjecia, status, usterka, opis)
+            )
+            conn.commit()
+            naprawa_id = cur.lastrowid
 
     return jsonify({"message": "Naprawa dodana", "id": naprawa_id}), 201
 
