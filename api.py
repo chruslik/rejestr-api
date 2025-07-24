@@ -62,28 +62,6 @@ def get_naprawy():
         for row in rows
     ])
 
-@app.route("/naprawy", methods=["POST"])
-def dodaj_naprawe():
-    try:
-        data = request.get_json()
-        print("Odebrany JSON:", data)  # << DODAJ TO
-        maszyna_id = data.get("maszyna_id")
-        data_przyjecia = data.get("data_przyjecia")
-        status = data.get("status", "nowa")
-        usterka = data.get("usterka")
-        opis = data.get("opis")
-
-        if not maszyna_id or not data_przyjecia:
-            return jsonify({"error": "Brak danych"}), 400
-
-        with connect_db() as conn:
-            cur = conn.cursor()
-            cur.execute("""INSERT INTO naprawy (maszyna_id, data_przyjecia, status, usterka, opis)
-                           VALUES (?, ?, ?, ?, ?)""",
-                        (maszyna_id, data_przyjecia, status, usterka, opis))
-            conn.commit()
-            return jsonify({"id": cur.lastrowid}), 201
-
     except Exception as e:
         print("Błąd:", str(e))  # << I TO
         return jsonify({"error": str(e)}), 500
