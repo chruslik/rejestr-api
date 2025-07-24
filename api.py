@@ -62,9 +62,9 @@ def get_naprawy():
         for row in rows
     ])
 
-    except Exception as e:
-        print("Błąd:", str(e))
-        return jsonify({"error": str(e)}), 500
+        except Exception as e:
+            print("Błąd:", str(e))
+            return jsonify({"error": str(e)}), 500
 
 @app.route("/maszyny", methods=["GET"])
 def get_maszyny():
