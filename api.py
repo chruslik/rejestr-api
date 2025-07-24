@@ -98,15 +98,48 @@ def dodaj_lub_pobierz_maszyne():
 
 @app.route("/naprawy", methods=["GET"])
 def pobierz_naprawy():
+    query = """
+        SELECT n.id, k.nazwa AS klient, m.marka, m.klasa, m.numer_seryjny AS sn,
+               n.status, n.data_przyjecia, n.data_zakonczenia, n.usterka, n.opis
+        FROM naprawy n
+        JOIN maszyny m ON n.maszyna_id = m.id
+        JOIN klienci k ON m.klient_id = k.id
+    """
+    filters = []
+    values = []
+
+    if status := request.args.get("status"):
+        filters.append("n.status = ?")
+        values.append(status)
+    if sn := request.args.get("sn"):
+        filters.append("m.numer_seryjny = ?")
+        values.append(sn)
+    if usterka := request.args.get("usterka"):
+        filters.append("n.usterka LIKE ?")
+        values.append(f"%{usterka}%")
+    if data_przyjecia := request.args.get("data_przyjecia"):
+        filters.append("n.data_przyjecia = ?")
+        values.append(data_przyjecia)
+    if klasa := request.args.get("klasa"):
+        filters.append("m.klasa = ?")
+        values.append(klasa)
+    if klient := request.args.get("klient"):
+        filters.append("k.nazwa = ?")
+        values.append(klient)
+    if marka := request.args.get("marka"):
+        filters.append("m.marka = ?")
+        values.append(marka)
+
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+
+    query += " ORDER BY n.id DESC"
+
     with connect_db() as conn:
         cur = conn.cursor()
-        cur.execute("""SELECT n.id, k.nazwa AS klient, m.marka, m.klasa, m.numer_seryjny AS sn,
-                              n.status, n.data_przyjecia, n.data_zakonczenia, n.usterka, n.opis
-                       FROM naprawy n
-                       JOIN maszyny m ON n.maszyna_id = m.id
-                       JOIN klienci k ON m.klient_id = k.id
-                       ORDER BY n.id DESC""")
+        cur.execute(query, values)
         naprawy = [dict(zip([col[0] for col in cur.description], row)) for row in cur.fetchall()]
+
     return jsonify(naprawy)
 
 @app.route("/klienci", methods=["POST"])
