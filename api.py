@@ -181,7 +181,7 @@ def update_naprawa(naprawa_id):
     opis = data.get("opis")
 
     with connect_db() as conn:
-[09:42, 24.07.2025] ChatGPT: conn.execute("""UPDATE naprawy SET status=?, data_zakonczenia=?, usterka=?, opis=? WHERE id=?""",
+        conn.execute("""UPDATE naprawy SET status=?, data_zakonczenia=?, usterka=?, opis=? WHERE id=?""",
                      (status, data_zak, usterka, opis, naprawa_id))
         conn.commit()
 
@@ -213,5 +213,5 @@ def get_slowniki():
 
 if name == "main":
     init_db()
-[09:42, 24.07.2025] ChatGPT: port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
