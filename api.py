@@ -65,15 +65,15 @@ def add_naprawa():
     with connect_db() as conn:
         cur = conn.cursor()
 
-        cur.execute("SELECT id FROM klienci WHERE nazwa=?", (klient,))
-        row = cur.fetchone()
-        klient_id = row[0] if row else cur.execute("INSERT INTO klienci (nazwa) VALUES (?)", (klient,)).lastrowid
+        #cur.execute("SELECT id FROM klienci WHERE nazwa=?", (klient,))
+        #row = cur.fetchone()
+        #klient_id = row[0] if row else cur.execute("INSERT INTO klienci (nazwa) VALUES (?)", (klient,)).lastrowid
 
-        cur.execute("SELECT id FROM maszyny WHERE numer_seryjny=? AND klient_id=?", (sn, klient_id))
-        row = cur.fetchone()
-        maszyna_id = row[0] if row else cur.execute(
-            "INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny) VALUES (?, ?, ?, ?)",
-            (klient_id, marka, klasa, sn)).lastrowid
+        #cur.execute("SELECT id FROM maszyny WHERE numer_seryjny=? AND klient_id=?", (sn, klient_id))
+        #row = cur.fetchone()
+        #maszyna_id = row[0] if row else cur.execute(
+         #   "INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny) VALUES (?, ?, ?, ?)",
+          #  (klient_id, marka, klasa, sn)).lastrowid
 
         cur.execute("INSERT INTO naprawy (maszyna_id, data_przyjecia, status, usterka, opis) VALUES (?, ?, 'nowa', ?, ?)",
                     (maszyna_id, data_przyjecia, usterka, opis))
