@@ -63,53 +63,30 @@ def get_naprawy():
     ])
 
 @app.route("/naprawy", methods=["POST"])
-def add_naprawa():
-    data = request.json
-    klient_nazwa = data.get("klient", "").strip()
-    marka = data.get("marka", "").strip()
-    klasa = data.get("klasa", "").strip()
-    sn = data.get("sn", "").strip()
-    usterka = data.get("usterka", "").strip()
-    opis = data.get("opis", "").strip()
-    data_przyjecia = data.get("data_przyjecia", datetime.now().strftime("%Y-%m-%d"))
-    status = data.get("status", "nowa")
+def dodaj_naprawe():
+    try:
+        data = request.get_json()
+        print("Odebrany JSON:", data)  # << DODAJ TO
+        maszyna_id = data.get("maszyna_id")
+        data_przyjecia = data.get("data_przyjecia")
+        status = data.get("status", "nowa")
+        usterka = data.get("usterka")
+        opis = data.get("opis")
 
-    if not klient_nazwa or not sn:
-        return jsonify({"error": "Brak klienta lub numeru seryjnego"}), 400
+        if not maszyna_id or not data_przyjecia:
+            return jsonify({"error": "Brak danych"}), 400
 
-    with connect_db() as conn:
-        cur = conn.cursor()
-
-        # Szukaj lub dodaj klienta
-        cur.execute("SELECT id FROM klienci WHERE nazwa = ?", (klient_nazwa,))
-        klient_row = cur.fetchone()
-        if klient_row:
-            klient_id = klient_row[0]
-        else:
-            cur.execute("INSERT INTO klienci (nazwa) VALUES (?)", (klient_nazwa,))
-            klient_id = cur.lastrowid
-
-        # Szukaj lub dodaj maszynę
-        cur.execute("SELECT id FROM maszyny WHERE numer_seryjny = ?", (sn,))
-        maszyna_row = cur.fetchone()
-        if maszyna_row:
-            maszyna_id = maszyna_row[0]
-        else:
-            cur.execute(
-                "INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny) VALUES (?, ?, ?, ?)",
-                (klient_id, marka, klasa, sn)
-            )
-            maszyna_id = cur.lastrowid
-
-            # Dodaj naprawę
-            cur.execute(
-                "INSERT INTO naprawy (maszyna_id, data_przyjecia, status, usterka, opis) VALUES (?, ?, ?, ?, ?)",
-                (maszyna_id, data_przyjecia, status, usterka, opis)
-            )
+        with connect_db() as conn:
+            cur = conn.cursor()
+            cur.execute("""INSERT INTO naprawy (maszyna_id, data_przyjecia, status, usterka, opis)
+                           VALUES (?, ?, ?, ?, ?)""",
+                        (maszyna_id, data_przyjecia, status, usterka, opis))
             conn.commit()
-            naprawa_id = cur.lastrowid
+            return jsonify({"id": cur.lastrowid}), 201
 
-    return jsonify({"message": "Naprawa dodana", "id": naprawa_id}), 201
+    except Exception as e:
+        print("Błąd:", str(e))  # << I TO
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/maszyny", methods=["GET"])
 def get_maszyny():
