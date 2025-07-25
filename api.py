@@ -3,7 +3,7 @@ from flask_cors import CORS
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-app = Flask(name)
+app = Flask(__name__)
 CORS(app)
 
 DATABASE_URL = "postgresql://postgres:[eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3aXJrZWN4cXloeGxzbGR2Z211Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MjYyNzEsImV4cCI6MjA2OTAwMjI3MX0.llUkK3OfuF26huW4fOqOwsq3U0KOvTWUpY9Sw9DkSaI]@db.cwirkecxqyhxlsldvgmu.supabase.co:5432/postgres"
