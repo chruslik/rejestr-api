@@ -3,14 +3,29 @@ from flask_cors import CORS
 import sqlite3
 from datetime import datetime
 import os
+import requests
 
 app = Flask(__name__)
 CORS(app)
+
 
 DB_PATH = "rejestr.db"
 
 def connect_db():
     return sqlite3.connect(DB_PATH)
+
+def fetch_db():
+    if not os.path.exists(DB_PATH):
+        print("Pobieram bazę z GitHub...")
+        url = "https://raw.githubusercontent.com/chruslik/Rejestr_2/main/rejestr.db"
+        r = requests.get(url)
+        if r.status_code == 200:
+            with open(DB_PATH, "wb") as f:
+                f.write(r.content)
+            print("Baza została pobrana.")
+        else:
+            print("Nie udało się pobrać bazy:", r.status_code)
+
 
 def init_db():
     with connect_db() as conn:
@@ -44,6 +59,9 @@ def init_db():
             )
         """)
         conn.commit()
+
+fetch_db()
+init_db()
 
 @app.route("/naprawy", methods=["GET"])
 def get_naprawy():
