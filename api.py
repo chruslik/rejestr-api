@@ -236,6 +236,17 @@ def get_slowniki():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    def connect_db():
+        print("Łączenie z bazą:", DATABASE_URL)
+        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+    print("Inicjalizacja bazy danych...")
+    try:
+        init_db()
+        print("Baza danych została poprawnie zainicjalizowana.")
+    except Exception as e:
+        print("Błąd podczas inicjalizacji bazy:", e)
+
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
