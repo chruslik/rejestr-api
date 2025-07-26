@@ -206,7 +206,7 @@ def dodaj_klienta():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@@app.route("/slowniki", methods=["GET"])
+@app.route("/slowniki", methods=["GET"])
 def get_slowniki():
     try:
         with connect_db() as conn:
