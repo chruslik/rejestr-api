@@ -207,25 +207,25 @@ def dodaj_klienta():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/slowniki", methods=["GET"])
-def get_slowniki():
-    try:
-        with connect_db() as conn:
-            cur = conn.cursor()
+    def get_slowniki():
+        try:
+            with connect_db() as conn:
+                cur = conn.cursor()
 
-            cur.execute("SELECT DISTINCT marka FROM maszyny")
-            marki = [row["marka"] for row in cur.fetchall()]
+                cur.execute("SELECT DISTINCT marka FROM maszyny")
+                marki = [row["marka"] for row in cur.fetchall()]
 
-            cur.execute("SELECT DISTINCT klasa FROM maszyny")
-            klasy = [row["klasa"] for row in cur.fetchall()]
+                cur.execute("SELECT DISTINCT klasa FROM maszyny")
+                klasy = [row["klasa"] for row in cur.fetchall()]
 
-            cur.execute("SELECT DISTINCT usterka FROM naprawy")
-            usterki = [row["usterka"] for row in cur.fetchall()]
+                cur.execute("SELECT DISTINCT usterka FROM naprawy")
+                usterki = [row["usterka"] for row in cur.fetchall()]
 
-            cur.execute("SELECT nazwa FROM klienci")
-            klienci = [row["nazwa"] for row in cur.fetchall()]
+                cur.execute("SELECT nazwa FROM klienci")
+                klienci = [row["nazwa"] for row in cur.fetchall()]
 
-            cur.execute("SELECT DISTINCT numer_seryjny FROM maszyny")
-            numery_seryjne = [row["numer_seryjny"] for row in cur.fetchall()]
+                cur.execute("SELECT DISTINCT numer_seryjny FROM maszyny")
+                numery_seryjne = [row["numer_seryjny"] for row in cur.fetchall()]
 
     def connect_db():
         print("Łączenie z bazą:", DATABASE_URL)
