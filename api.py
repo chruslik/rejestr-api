@@ -3,6 +3,7 @@ from flask_cors import CORS
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os  # ← to jest wymagane
+import traceback
 
 app = Flask(__name__)
 CORS(app)
@@ -205,7 +206,7 @@ def dodaj_klienta():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/slowniki", methods=["GET"])
+@@app.route("/slowniki", methods=["GET"])
 def get_slowniki():
     try:
         with connect_db() as conn:
@@ -225,16 +226,6 @@ def get_slowniki():
 
             cur.execute("SELECT DISTINCT numer_seryjny FROM maszyny")
             numery_seryjne = [row["numer_seryjny"] for row in cur.fetchall()]
-
-        return jsonify({
-            "marki": marki,
-            "klasy": klasy,
-            "usterki": usterki,
-            "klienci": klienci,
-            "numery_seryjne": numery_seryjne
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
     def connect_db():
         print("Łączenie z bazą:", DATABASE_URL)
