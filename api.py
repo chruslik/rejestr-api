@@ -227,6 +227,18 @@ def get_slowniki():
             cur.execute("SELECT DISTINCT numer_seryjny FROM maszyny")
             numery_seryjne = [row["numer_seryjny"] for row in cur.fetchall()]
 
+        return jsonify({
+            "marki": marki,
+            "klasy": klasy,
+            "usterki": usterki,
+            "klienci": klienci,
+            "numery_seryjne": numery_seryjne
+        })
+
+    except Exception as e:
+        print("Błąd w /slowniki:", str(e))
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     print("Inicjalizacja bazy danych...")
