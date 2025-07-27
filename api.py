@@ -213,19 +213,19 @@ def get_slowniki():
             cur = conn.cursor()
 
             cur.execute("SELECT DISTINCT marka FROM maszyny")
-            marki = [row["marka"] for row in cur.fetchall()]
+            marki = [row[0] for row in cur.fetchall()]
 
             cur.execute("SELECT DISTINCT klasa FROM maszyny")
-            klasy = [row["klasa"] for row in cur.fetchall()]
+            klasy = [row[0] for row in cur.fetchall()]
 
             cur.execute("SELECT DISTINCT usterka FROM naprawy")
-            usterki = [row["usterka"] for row in cur.fetchall()]
+            usterki = [row[0] for row in cur.fetchall()]
 
             cur.execute("SELECT nazwa FROM klienci")
-            klienci = [row["nazwa"] for row in cur.fetchall()]
+            klienci = [row[0] for row in cur.fetchall()]
 
             cur.execute("SELECT DISTINCT numer_seryjny FROM maszyny")
-            numery_seryjne = [row["numer_seryjny"] for row in cur.fetchall()]
+            numery_seryjne = [row[0] for row in cur.fetchall()]
 
         return jsonify({
             "marki": marki,
@@ -234,11 +234,9 @@ def get_slowniki():
             "klienci": klienci,
             "numery_seryjne": numery_seryjne
         })
-
     except Exception as e:
         print("Błąd w /slowniki:", str(e))
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == "__main__":
     print("Inicjalizacja bazy danych...")
