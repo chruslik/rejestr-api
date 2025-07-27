@@ -238,6 +238,18 @@ def get_slowniki():
         print("Błąd w /slowniki:", str(e))
         return jsonify({"error": str(e)}), 500
 
+@app.route("/test-db", methods=["GET"])
+def test_db():
+    try:
+        with connect_db() as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT 1")
+            result = cur.fetchone()
+        return jsonify({"status": "ok", "result": result})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 if __name__ == "__main__":
     print("Inicjalizacja bazy danych...")
     try:
