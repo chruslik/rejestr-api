@@ -10,6 +10,10 @@ CORS(app)
 
 DATABASE_URL = "postgresql://postgres.njnotdsifzblpnlfulau:sb_secret_jYSXXP-r7B8nzr2B1aTIJA_sOzozlnH@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
 
+@app.route("/")
+def index():
+    return {"status": "ok", "message": "API działa"}
+
 def connect_db():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
