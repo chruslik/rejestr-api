@@ -8,7 +8,7 @@ import traceback
 app = Flask(__name__)
 CORS(app)
 
-DATABASE_URL = "postgresql://postgres:[eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3aXJrZWN4cXloeGxzbGR2Z211Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0MjYyNzEsImV4cCI6MjA2OTAwMjI3MX0.llUkK3OfuF26huW4fOqOwsq3U0KOvTWUpY9Sw9DkSaI]@db.cwirkecxqyhxlsldvgmu.supabase.co:5432/postgres"
+DATABASE_URL = "postgresql://postgres.njnotdsifzblpnlfulau:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qbm90ZHNpZnpibHBubGZ1bGF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2OTY3ODksImV4cCI6MjA2OTI3Mjc4OX0.60mJN8_pDxb_GHF8dwGfYgbpraBF_0KWuEntkFudjoU@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
 
 def connect_db():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
