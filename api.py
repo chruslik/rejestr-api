@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from supabase import create_client, Client
-import psycopg2
 from psycopg2.extras import RealDictCursor
 import os  # ← to jest wymagane
 import traceback
@@ -64,22 +63,35 @@ def get_naprawy():
 @app.route("/naprawy", methods=["POST"])
 def dodaj_naprawe():
     try:
-        dane = request.json
+        dane = request.get_json()
+
+        klient = dane.get("klient")
+        marka = dane.get("marka")
+        klasa = dane.get("klasa")
+        sn = dane.get("sn")
+        data_przyjecia = dane.get("data_przyjecia")
+        data_zakonczenia = dane.get("data_zakonczenia")
+        status = dane.get("status")
+        usterka = dane.get("usterka")
+        opis = dane.get("opis")
+
+        if not klient or not sn or not data_przyjecia or not status:
+            return jsonify({"error": "Brak wymaganych danych: klient, sn, data_przyjecia, status"}), 400
 
         # Szukamy klienta
-        klient_resp = supabase.table("klienci").select("id").eq("nazwa", dane["klient"]).limit(1).execute()
+        klient_resp = supabase.table("klienci").select("id").eq("nazwa", klient).limit(1).execute()
         if klient_resp.data:
             klient_id = klient_resp.data[0]["id"]
         else:
-            nowy_klient = supabase.table("klienci").insert({"nazwa": dane["klient"]}).execute()
+            nowy_klient = supabase.table("klienci").insert({"nazwa": klient}).execute()
             klient_id = nowy_klient.data[0]["id"]
 
         # Szukamy maszyny
         maszyna_resp = supabase.table("maszyny").select("id").match({
             "klient_id": klient_id,
-            "marka": dane["marka"],
-            "klasa": dane["klasa"],
-            "numer_seryjny": dane["sn"]
+            "marka": marka,
+            "klasa": klasa,
+            "numer_seryjny": sn
         }).limit(1).execute()
 
         if maszyna_resp.data:
@@ -87,20 +99,20 @@ def dodaj_naprawe():
         else:
             nowa_maszyna = supabase.table("maszyny").insert({
                 "klient_id": klient_id,
-                "marka": dane["marka"],
-                "klasa": dane["klasa"],
-                "numer_seryjny": dane["sn"]
+                "marka": marka,
+                "klasa": klasa,
+                "numer_seryjny": sn
             }).execute()
             maszyna_id = nowa_maszyna.data[0]["id"]
 
         # Dodajemy naprawę
-            supabase.table("naprawy").insert({
+        supabase.table("naprawy").insert({
             "maszyna_id": maszyna_id,
-            "data_przyjecia": dane["data_przyjecia"],
-            "data_zakonczenia": dane.get("data_zakonczenia"),
-            "status": dane["status"],
-            "usterka": dane["usterka"],
-            "opis": dane["opis"]
+            "data_przyjecia": data_przyjecia,
+            "data_zakonczenia": data_zakonczenia,
+            "status": status,
+            "usterka": usterka,
+            "opis": opis
         }).execute()
 
         return jsonify({"sukces": True})
