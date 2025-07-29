@@ -215,7 +215,9 @@ def dodaj_klienta():
 @app.route("/slowniki", methods=["GET"])
 def get_slowniki():
     try:
-        with connect_db() as conn:
+        conn = connect_db()
+        print("Połączono z bazą")
+        with conn:
             cur = conn.cursor()
 
             cur.execute("SELECT DISTINCT marka FROM maszyny")
