@@ -122,7 +122,6 @@ def delete_naprawa(naprawa_id):
         return jsonify({"error": str(e)}), 500
 
 
-python
 @app.route("/naprawy/<int:naprawa_id>", methods=["PUT"])
 def update_naprawa(naprawa_id):
     data = request.get_json()
