@@ -14,6 +14,7 @@ load_dotenv()
 # Klucze Supabase z Environment
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -22,7 +23,7 @@ def index():
     return {"status": "ok", "message": "API działa"}
 
 def connect_db():
-    return psycopg2.connect(SUPABASE_URL, cursor_factory=RealDictCursor)
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
    
 
 @app.route("/naprawy", methods=["GET"])
@@ -187,38 +188,24 @@ def dodaj_klienta():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/slowniki", methods=["GET"])
+@app.route("/slowniki")
 def get_slowniki():
     try:
-        conn = connect_db()
-        print("Połączono z bazą")
-        with conn:
-            cur = conn.cursor()
-
-            cur.execute("SELECT DISTINCT marka FROM maszyny")
-            marki = [row[0] for row in cur.fetchall()]
-
-            cur.execute("SELECT DISTINCT klasa FROM maszyny")
-            klasy = [row[0] for row in cur.fetchall()]
-
-            cur.execute("SELECT DISTINCT usterka FROM naprawy")
-            usterki = [row[0] for row in cur.fetchall()]
-
-            cur.execute("SELECT nazwa FROM klienci")
-            klienci = [row[0] for row in cur.fetchall()]
-
-            cur.execute("SELECT DISTINCT numer_seryjny FROM maszyny")
-            numery_seryjne = [row[0] for row in cur.fetchall()]
+        marki = supabase.table("maszyny").select("marka").execute()
+        klasy = supabase.table("maszyny").select("klasa").execute()
+        usterki = supabase.table("naprawy").select("usterka").execute()
+        klienci = supabase.table("klienci").select("nazwa").execute()
+        numery_seryjne = supabase.table("maszyny").select("numer_seryjny").execute()
 
         return jsonify({
-            "marki": marki,
-            "klasy": klasy,
-            "usterki": usterki,
-            "klienci": klienci,
-            "numery_seryjne": numery_seryjne
+            "marki": list(set([row["marka"] for row in marki.data if row["marka"]])),
+            "klasy": list(set([row["klasa"] for row in klasy.data if row["klasa"]])),
+            "usterki": list(set([row["usterka"] for row in usterki.data if row["usterka"]])),
+            "klienci": [row["nazwa"] for row in klienci.data],
+            "numery_seryjne": [row["numer_seryjny"] for row in numery_seryjne.data]
         })
     except Exception as e:
-        print("Błąd w /slowniki:", str(e))
+        print("Błąd:", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/test-db", methods=["GET"])
