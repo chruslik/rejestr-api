@@ -21,6 +21,10 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 def index():
     return {"status": "ok", "message": "API działa"}
 
+def connect_db():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+   
+
 @app.route("/naprawy", methods=["GET"])
 def get_naprawy():
     try:
