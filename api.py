@@ -21,106 +21,126 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 @app.route("/")
 def index():
     return {"status": "ok", "message": "API działa"}
-
-def connect_db():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
    
 
 @app.route("/naprawy", methods=["GET"])
 def get_naprawy():
     try:
-        with connect_db() as conn:
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT n.id, k.nazwa AS klient, m.marka, m.klasa, m.numer_seryjny AS sn,
-                       n.status, n.data_przyjecia, n.data_zakonczenia,
-                       n.usterka, n.opis
-                FROM naprawy n
-                JOIN maszyny m ON n.maszyna_id = m.id
-                JOIN klienci k ON m.klient_id = k.id
-                ORDER BY n.id DESC
-            """)
-            return jsonify(cur.fetchall())
+        # Pobierz wszystkie naprawy
+        naprawy_resp = supabase.table("naprawy").select("*").execute()
+        naprawy = naprawy_resp.data
+
+        # Pobierz maszyny i klientów
+        maszyny_resp = supabase.table("maszyny").select("*").execute()
+        maszyny = {m["id"]: m for m in maszyny_resp.data}
+
+        klienci_resp = supabase.table("klienci").select("*").execute()
+        klienci = {k["id"]: k for k in klienci_resp.data}
+
+        wynik = []
+        for n in naprawy:
+            maszyna = maszyny.get(n["maszyna_id"], {})
+            klient = klienci.get(maszyna.get("klient_id"), {})
+            wynik.append({
+                "id": n["id"],
+                "klient": klient.get("nazwa"),
+                "marka": maszyna.get("marka"),
+                "klasa": maszyna.get("klasa"),
+                "sn": maszyna.get("numer_seryjny"),
+                "status": n["status"],
+                "data_przyjecia": n["data_przyjecia"],
+                "data_zakonczenia": n["data_zakonczenia"],
+                "usterka": n["usterka"],
+                "opis": n["opis"]
+            })
+        # Posortuj malejąco po ID
+        wynik.sort(key=lambda x: x["id"], reverse=True)
+
+        return jsonify(wynik)
     except Exception as e:
+        print("Błąd w /naprawy:", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/naprawy", methods=["POST"])
 def dodaj_naprawe():
     try:
         dane = request.json
-        with connect_db() as conn:
-            cur = conn.cursor()
 
-            # Szukamy istniejącego klienta
-            cur.execute("SELECT id FROM klienci WHERE nazwa = %s", (dane["klient"],))
-            klient = cur.fetchone()
-            if klient:
-                klient_id = klient["id"]
-            else:
-                cur.execute("INSERT INTO klienci (nazwa) VALUES (%s) RETURNING id", (dane["klient"],))
-                klient_id = cur.fetchone()["id"]
+        # Szukamy klienta
+        klient_resp = supabase.table("klienci").select("id").eq("nazwa", dane["klient"]).limit(1).execute()
+        if klient_resp.data:
+            klient_id = klient_resp.data[0]["id"]
+        else:
+            nowy_klient = supabase.table("klienci").insert({"nazwa": dane["klient"]}).execute()
+            klient_id = nowy_klient.data[0]["id"]
 
-            # Szukamy istniejącej maszyny
-            cur.execute("""
-                SELECT id FROM maszyny
-                WHERE klient_id = %s AND marka = %s AND klasa = %s AND numer_seryjny = %s
-            """, (klient_id, dane["marka"], dane["klasa"], dane["sn"]))
-            maszyna = cur.fetchone()
-            if maszyna:
-                maszyna_id = maszyna["id"]
-            else:
-                cur.execute("""
-                    INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny)
-                    VALUES (%s, %s, %s, %s) RETURNING id
-                """, (klient_id, dane["marka"], dane["klasa"], dane["sn"]))
-                maszyna_id = cur.fetchone()["id"]
+        # Szukamy maszyny
+        maszyna_resp = supabase.table("maszyny").select("id").match({
+            "klient_id": klient_id,
+            "marka": dane["marka"],
+            "klasa": dane["klasa"],
+            "numer_seryjny": dane["sn"]
+        }).limit(1).execute()
 
-            cur.execute("""
-                INSERT INTO naprawy (maszyna_id, data_przyjecia, data_zakonczenia, status, usterka, opis)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (
-                maszyna_id,
-                dane["data_przyjecia"],
-                dane.get("data_zakonczenia"),
-                dane["status"],
-                dane["usterka"],
-                dane["opis"]
-            ))
-            conn.commit()
-            return jsonify({"sukces": True})
+        if maszyna_resp.data:
+            maszyna_id = maszyna_resp.data[0]["id"]
+        else:
+            nowa_maszyna = supabase.table("maszyny").insert({
+                "klient_id": klient_id,
+                "marka": dane["marka"],
+                "klasa": dane["klasa"],
+                "numer_seryjny": dane["sn"]
+            }).execute()
+            maszyna_id = nowa_maszyna.data[0]["id"]
+
+        # Dodajemy naprawę
+            supabase.table("naprawy").insert({
+            "maszyna_id": maszyna_id,
+            "data_przyjecia": dane["data_przyjecia"],
+            "data_zakonczenia": dane.get("data_zakonczenia"),
+            "status": dane["status"],
+            "usterka": dane["usterka"],
+            "opis": dane["opis"]
+        }).execute()
+
+        return jsonify({"sukces": True})
     except Exception as e:
+        print("Błąd w dodaj_naprawe:", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/naprawy/<int:naprawa_id>", methods=["DELETE"])
 def delete_naprawa(naprawa_id):
     try:
-        with connect_db() as conn:
-            cur = conn.cursor()
-            cur.execute("DELETE FROM naprawy WHERE id = %s", (naprawa_id,))
-            conn.commit()
-        return jsonify({"message": "Usunięto naprawę"})
+        result = supabase.table("naprawy").delete().eq("id", naprawa_id).execute()
+
+        if result.data:
+            return jsonify({"message": "Usunięto naprawę"})
+        else:
+            return jsonify({"error": "Nie znaleziono naprawy"}), 404
     except Exception as e:
+        print("Błąd w delete_naprawa:", e)
         return jsonify({"error": str(e)}), 500
 
+
+python
 @app.route("/naprawy/<int:naprawa_id>", methods=["PUT"])
 def update_naprawa(naprawa_id):
     data = request.get_json()
-    status = data.get("status")
-    data_zak = data.get("data_zakonczenia")
-    usterka = data.get("usterka")
-    opis = data.get("opis")
 
     try:
-        with connect_db() as conn:
-            cur = conn.cursor()
-            cur.execute("""
-                UPDATE naprawy 
-                SET status = %s, data_zakonczenia = %s, usterka = %s, opis = %s 
-                WHERE id = %s
-            """, (status, data_zak, usterka, opis, naprawa_id))
-            conn.commit()
-        return jsonify({"message": "Zaktualizowano naprawę"})
+        result = supabase.table("naprawy").update({
+            "status": data.get("status"),
+            "data_zakonczenia": data.get("data_zakonczenia"),
+            "usterka": data.get("usterka"),
+            "opis": data.get("opis")
+        }).eq("id", naprawa_id).execute()
+
+        if result.data:
+            return jsonify({"message": "Zaktualizowano naprawę"})
+        else:
+            return jsonify({"error": "Nie znaleziono naprawy"}), 404
     except Exception as e:
+        print("Błąd w update_naprawa:", e)
         return jsonify({"error": str(e)}), 500
 
 @app.route("/maszyny", methods=["GET"])
@@ -145,24 +165,26 @@ def dodaj_lub_pobierz_maszyne():
         if not klient_id or not numer_seryjny:
             return jsonify({"error": "Brak wymaganych danych"}), 400
 
-        with connect_db() as conn:
-            cur = conn.cursor()
-            cur.execute("""
-                SELECT id FROM maszyny
-                WHERE klient_id = %s AND numer_seryjny = %s
-            """, (klient_id, numer_seryjny))
-            row = cur.fetchone()
-            if row:
-                return jsonify({"id": row["id"]})
+        # Sprawdź czy maszyna już istnieje
+        existing = supabase.table("maszyny") \
+            .select("id") \
+            .eq("klient_id", klient_id) \
+            .eq("numer_seryjny", numer_seryjny) \
+            .limit(1) \
+            .execute()
 
-            cur.execute("""
-                INSERT INTO maszyny (klient_id, marka, klasa, numer_seryjny)
-                VALUES (%s, %s, %s, %s)
-                RETURNING id
-            """, (klient_id, marka, klasa, numer_seryjny))
-            new_id = cur.fetchone()["id"]
-            conn.commit()
-            return jsonify({"id": new_id})
+        if existing.data:
+            return jsonify({"id": existing.data[0]["id"]})
+
+        # Wstaw nową maszynę
+        insert = supabase.table("maszyny").insert({
+            "klient_id": klient_id,
+            "marka": marka,
+            "klasa": klasa,
+            "numer_seryjny": numer_seryjny
+        }).execute()
+
+        return jsonify({"id": insert.data[0]["id"]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -174,17 +196,19 @@ def dodaj_klienta():
         if not nazwa:
             return jsonify({"error": "Brak nazwy klienta"}), 400
 
-        with connect_db() as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT id FROM klienci WHERE nazwa = %s", (nazwa,))
-            row = cur.fetchone()
-            if row:
-                return jsonify({"id": row["id"]})
-            
-            cur.execute("INSERT INTO klienci (nazwa) VALUES (%s) RETURNING id", (nazwa,))
-            new_id = cur.fetchone()["id"]
-            conn.commit()
-            return jsonify({"id": new_id})
+        # Sprawdź, czy klient już istnieje
+        existing = supabase.table("klienci") \
+            .select("id") \
+            .eq("nazwa", nazwa) \
+            .limit(1) \
+            .execute()
+
+        if existing.data:
+            return jsonify({"id": existing.data[0]["id"]})
+
+        # Dodaj nowego klienta
+        insert = supabase.table("klienci").insert({"nazwa": nazwa}).execute()
+        return jsonify({"id": insert.data[0]["id"]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -208,16 +232,6 @@ def get_slowniki():
         print("Błąd:", e)
         return jsonify({"error": str(e)}), 500
 
-@app.route("/test-db", methods=["GET"])
-def test_db():
-    try:
-        with connect_db() as conn:
-            cur = conn.cursor()
-            cur.execute("SELECT 1")
-            result = cur.fetchone()
-        return jsonify({"status": "ok", "result": result})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":
