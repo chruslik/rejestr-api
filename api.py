@@ -60,66 +60,25 @@ def get_naprawy():
         print("Błąd w /naprawy:", e)
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/naprawy", methods=["POST"])
-def dodaj_naprawe():
+def dodaj_naprawe_prosto():
     try:
         dane = request.get_json()
 
-        klient = dane.get("klient")
-        marka = dane.get("marka")
-        klasa = dane.get("klasa")
-        sn = dane.get("sn")
-        data_przyjecia = dane.get("data_przyjecia")
-        data_zakonczenia = dane.get("data_zakonczenia")
-        status = dane.get("status")
-        usterka = dane.get("usterka")
-        opis = dane.get("opis")
+        # Walidacja
+        if not dane.get("maszyna_id") or not dane.get("data_przyjecia") or not dane.get("status"):
+            return jsonify({"error": "Brak wymaganych danych"}), 400
 
-        if not klient or not sn or not data_przyjecia or not status:
-            return jsonify({"error": "Brak wymaganych danych: klient, sn, data_przyjecia, status"}), 400
-
-        # Klient
-        klient_resp = supabase.table("klienci").select("id").eq("nazwa", klient).limit(1).execute()
-        if klient_resp.data:
-            klient_id = klient_resp.data[0]["id"]
-        else:
-            nowy_klient = supabase.table("klienci").insert({"nazwa": klient}).execute()
-            klient_id = nowy_klient.data[0]["id"]
-
-        # Maszyna
-        maszyna_resp = supabase.table("maszyny").select("id").match({
-            "klient_id": klient_id,
-            "marka": marka,
-            "klasa": klasa,
-            "numer_seryjny": sn
-        }).limit(1).execute()
-
-        if maszyna_resp.data:
-            maszyna_id = maszyna_resp.data[0]["id"]
-        else:
-            nowa_maszyna = supabase.table("maszyny").insert({
-                "klient_id": klient_id,
-                "marka": marka,
-                "klasa": klasa,
-                "numer_seryjny": sn
-            }).execute()
-            maszyna_id = nowa_maszyna.data[0]["id"]
-
-        # Budujemy dane do naprawy tylko z niepustych
-        naprawa_dane = {
-            "maszyna_id": maszyna_id,
-            "data_przyjecia": data_przyjecia,
-            "status": status
-        }
-        if data_zakonczenia:
-            naprawa_dane["data_zakonczenia"] = data_zakonczenia
-        if usterka:
-            naprawa_dane["usterka"] = usterka
-        if opis:
-            naprawa_dane["opis"] = opis
-
-        response = supabase.table("naprawy").insert(naprawa_dane).execute()
-        print("Odpowiedź z supabase:", response)
+        # Dodanie naprawy
+        supabase.table("naprawy").insert({
+            "maszyna_id": dane["maszyna_id"],
+            "data_przyjecia": dane["data_przyjecia"],
+            "data_zakonczenia": dane.get("data_zakonczenia"),
+            "status": dane["status"],
+            "usterka": dane.get("usterka"),
+            "opis": dane.get("opis")
+        }).execute()
 
         return jsonify({"sukces": True})
     except Exception as e:
