@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)
-
+load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
