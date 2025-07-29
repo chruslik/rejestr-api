@@ -9,43 +9,12 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 CORS(app)
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Klucze Supabase z Environment
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-
-def connect_db():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-
-def init_db():
-    with connect_db() as conn:
-        with conn.cursor() as c:
-            c.execute("""
-                CREATE TABLE IF NOT EXISTS klienci (
-                    id SERIAL PRIMARY KEY,
-                    nazwa VARCHAR
-                )
-            """)
-            c.execute("""
-                CREATE TABLE IF NOT EXISTS maszyny (
-                    id SERIAL PRIMARY KEY,
-                    klient_id INTEGER REFERENCES klienci(id),
-                    marka VARCHAR,
-                    klasa VARCHAR,
-                    numer_seryjny VARCHAR
-                )
-            """)
-            c.execute("""
-                CREATE TABLE IF NOT EXISTS naprawy (
-                    id SERIAL PRIMARY KEY,
-                    maszyna_id INTEGER REFERENCES maszyny(id),
-                    data_przyjecia DATE,
-                    data_zakonczenia DATE,
-                    status VARCHAR,
-                    usterka TEXT,
-                    opis TEXT
-                )
-            """)
-            conn.commit()
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @app.route("/")
 def index():
@@ -260,5 +229,5 @@ def test_db():
 
 
 if __name__ == "__main__":
-       port = int(os.environ.get("PORT", 10000))
+       port = int(os.environ.get("PORT", 5000))
        app.run(host="0.0.0.0", port=port)
