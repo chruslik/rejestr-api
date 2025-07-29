@@ -22,7 +22,7 @@ def index():
     return {"status": "ok", "message": "API działa"}
 
 def connect_db():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    return psycopg2.connect(SUPABASE_URL, cursor_factory=RealDictCursor)
    
 
 @app.route("/naprawy", methods=["GET"])
