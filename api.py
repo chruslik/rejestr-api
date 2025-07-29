@@ -8,7 +8,7 @@ import traceback
 app = Flask(__name__)
 CORS(app)
 
-DATABASE_URL = "postgresql://postgres.njnotdsifzblpnlfulau:B@ran3k178984@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL = "postgresql://postgres.njnotdsifzblpnlfulau:IcJut0sNYnMPcdbf@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
 
 @app.route("/")
 def index():
