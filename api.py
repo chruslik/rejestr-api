@@ -4,11 +4,12 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os  # ← to jest wymagane
 import traceback
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app)
 
-DATABASE_URL = "postgresql://postgres.njnotdsifzblpnlfulau:IcJut0sNYnMPcdbf@aws-0-eu-north-1.pooler.supabase.com:6543/postgres"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
 
