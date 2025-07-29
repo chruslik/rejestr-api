@@ -10,9 +10,7 @@ CORS(app)
 
 DATABASE_URL = "postgresql://postgres.njnotdsifzblpnlfulau:IcJut0sNYnMPcdbf@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
 
-@app.route("/")
-def index():
-    return {"status": "ok", "message": "API działa"}
+
 
 def connect_db():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
@@ -47,6 +45,10 @@ def init_db():
                 )
             """)
             conn.commit()
+
+@app.route("/")
+def index():
+    return {"status": "ok", "message": "API działa"}
 
 @app.route("/naprawy", methods=["GET"])
 def get_naprawy():
