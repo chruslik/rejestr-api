@@ -8,7 +8,7 @@ import traceback
 app = Flask(__name__)
 CORS(app)
 
-DATABASE_URL = "postgresql://postgres.njnotdsifzblpnlfulau:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qbm90ZHNpZnpibHBubGZ1bGF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2OTY3ODksImV4cCI6MjA2OTI3Mjc4OX0.60mJN8_pDxb_GHF8dwGfYgbpraBF_0KWuEntkFudjoU@aws-0-eu-north-1.pooler.supabase.com:5432/postgres"
+DATABASE_URL = "ostgresql://postgres.njnotdsifzblpnlfulau:IcJut0sNYnMPcdbf@aws-0-eu-north-1.pooler.supabase.com:6543/postgres"
 
 
 
