@@ -23,53 +23,39 @@ def index():
    
 
 @app.route("/naprawy", methods=["GET"])
-def pobierz_naprawy():
+def get_naprawy():
     try:
-        klient = request.args.get("klient")
-        marka = request.args.get("marka")
-        klasa = request.args.get("klasa")
-        sn = request.args.get("sn")
-        status = request.args.get("status")
-        usterka = request.args.get("usterka")
+        # Pobierz wszystkie naprawy
+        naprawy_resp = supabase.table("naprawy").select("*").execute()
+        naprawy = naprawy_resp.data
 
-        query = supabase.table("naprawy") \
-            .select("id, status, data_przyjecia, data_zakonczenia, usterka, opis, maszyny(id, marka, klasa, numer_seryjny, klient_id), klienci(id, nazwa)") \
-            .order("id", desc=True)
+        # Pobierz maszyny i klientów
+        maszyny_resp = supabase.table("maszyny").select("*").execute()
+        maszyny = {m["id"]: m for m in maszyny_resp.data}
 
-        if klient:
-            query = query.ilike("klienci.nazwa", f"%{klient}%")
-        if marka:
-            query = query.ilike("maszyny.marka", f"%{marka}%")
-        if klasa:
-            query = query.ilike("maszyny.klasa", f"%{klasa}%")
-        if sn:
-            query = query.ilike("maszyny.numer_seryjny", f"%{sn}%")
-        if status:
-            query = query.eq("status", status)
-        if usterka:
-            query = query.ilike("usterka", f"%{usterka}%")
+        klienci_resp = supabase.table("klienci").select("*").execute()
+        klienci = {k["id"]: k for k in klienci_resp.data}
 
-        response = query.execute()
-
-        if response.error:
-            return jsonify({"error": response.error.message}), 500
-
-        wyniki = []
-        for n in response.data:
-            wyniki.append({
+        wynik = []
+        for n in naprawy:
+            maszyna = maszyny.get(n["maszyna_id"], {})
+            klient = klienci.get(maszyna.get("klient_id"), {})
+            wynik.append({
                 "id": n["id"],
-                "klient": n["klienci"]["nazwa"],
-                "marka": n["maszyny"]["marka"],
-                "klasa": n["maszyny"]["klasa"],
-                "sn": n["maszyny"]["numer_seryjny"],
+                "klient": klient.get("nazwa"),
+                "marka": maszyna.get("marka"),
+                "klasa": maszyna.get("klasa"),
+                "sn": maszyna.get("numer_seryjny"),
                 "status": n["status"],
                 "data_przyjecia": n["data_przyjecia"],
                 "data_zakonczenia": n["data_zakonczenia"],
                 "usterka": n["usterka"],
                 "opis": n["opis"]
             })
+        # Posortuj malejąco po ID
+        wynik.sort(key=lambda x: x["id"], reverse=True)
 
-        return jsonify(wyniki)
+        return jsonify(wynik)
     except Exception as e:
         print("Błąd w /naprawy:", e)
         return jsonify({"error": str(e)}), 500
