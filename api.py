@@ -23,35 +23,64 @@ def index():
    
 
 @app.route("/naprawy", methods=["GET"])
-def get_naprawy():
+def pobierz_naprawy():
     try:
-        # Pobierz wszystkie naprawy
-        naprawy_resp = supabase.table("naprawy").select("*").execute()
-        naprawy = naprawy_resp.data
+        query = supabase.table("naprawy").select(
+            """
+            id,
+            status,
+            data_przyjecia,
+            data_zakonczenia,
+            usterka,
+            opis,
+            klient:klienci(nazwa),
+            maszyna:maszyny(marka, klasa, numer_seryjny)
+            """
+        )
 
-        # Pobierz maszyny i klientów
-        maszyny_resp = supabase.table("maszyny").select("*").execute()
-        maszyny = {m["id"]: m for m in maszyny_resp.data}
+        klient = request.args.get("klient")
+        marka = request.args.get("marka")
+        klasa = request.args.get("klasa")
+        sn = request.args.get("sn")
+        status = request.args.get("status")
+        usterka = request.args.get("usterka")
 
-        klienci_resp = supabase.table("klienci").select("*").execute()
-        klienci = {k["id"]: k for k in klienci_resp.data}
+        if klient:
+            query = query.ilike("klienci.nazwa", f"%{klient}%")
+        if marka:
+            query = query.ilike("maszyny.marka", f"%{marka}%")
+        if klasa:
+            query = query.ilike("maszyny.klasa", f"%{klasa}%")
+        if sn:
+            query = query.ilike("maszyny.numer_seryjny", f"%{sn}%")
+        if status:
+            query = query.eq("status", status)
+        if usterka:
+            query = query.ilike("usterka", f"%{usterka}%")
+        response = query.execute()
 
-        wynik = []
-        for n in naprawy:
-            maszyna = maszyny.get(n["maszyna_id"], {})
-            klient = klienci.get(maszyna.get("klient_id"), {})
-            wynik.append({
-                "id": n["id"],
-                "klient": klient.get("nazwa"),
-                "marka": maszyna.get("marka"),
-                "klasa": maszyna.get("klasa"),
-                "sn": maszyna.get("numer_seryjny"),
-                "status": n["status"],
+        if response.error:
+            return jsonify({"error": response.error.message}), 500
+
+        wyniki = []
+        for row in response.data:
+            wyniki.append({
+                "id": row["id"],
+                "status": row["status"],
+                "data_przyjecia": row["data_przyjecia"],
+                "data_zakonczenia": row["data_zakonczenia"],
+                "usterka": row["usterka"],
+                "opis": row["opis"],
+                "klient": row["klient"]["nazwa"] if row.get("klient") else None,
+                "marka": row["maszyna"]["marka"] if row.get("maszyna") else None,
+                "klasa": row["maszyna"]["klasa"] if row.get("maszyna") else None,
+                "sn": row["maszyna"]["numer_se…
                 "data_przyjecia": n["data_przyjecia"],
                 "data_zakonczenia": n["data_zakonczenia"],
                 "usterka": n["usterka"],
                 "opis": n["opis"]
             })
+
         # Posortuj malejąco po ID
         wynik.sort(key=lambda x: x["id"], reverse=True)
 
