@@ -74,19 +74,12 @@ def pobierz_naprawy():
                 "klient": row["klient"]["nazwa"] if row.get("klient") else None,
                 "marka": row["maszyna"]["marka"] if row.get("maszyna") else None,
                 "klasa": row["maszyna"]["klasa"] if row.get("maszyna") else None,
-                "sn": row["maszyna"]["numer_se…
-                "data_przyjecia": n["data_przyjecia"],
-                "data_zakonczenia": n["data_zakonczenia"],
-                "usterka": n["usterka"],
-                "opis": n["opis"]
+                "sn": row["maszyna"]["numer_seyjny"] if row.get("maszyna") else None,
             })
 
-        # Posortuj malejąco po ID
-        wynik.sort(key=lambda x: x["id"], reverse=True)
+        return jsonify(wyniki)
 
-        return jsonify(wynik)
     except Exception as e:
-        print("Błąd w /naprawy:", e)
         return jsonify({"error": str(e)}), 500
 
 
