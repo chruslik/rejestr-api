@@ -25,25 +25,16 @@ def index():
 @app.route("/naprawy", methods=["GET"])
 def pobierz_naprawy():
     try:
-        query = supabase.table("naprawy").select(
-            """
-            id,
-            status,
-            data_przyjecia,
-            data_zakonczenia,
-            usterka,
-            opis,
-            klient:klienci(nazwa),
-            maszyna:maszyny(marka, klasa, numer_seryjny)
-            """
-        )
-
         klient = request.args.get("klient")
         marka = request.args.get("marka")
         klasa = request.args.get("klasa")
         sn = request.args.get("sn")
         status = request.args.get("status")
         usterka = request.args.get("usterka")
+
+        query = supabase.table("naprawy") \
+            .select("id, status, data_przyjecia, data_zakonczenia, usterka, opis, maszyny(id, marka, klasa, numer_seryjny, klient_id), klienci(id, nazwa)") \
+            .order("id", desc=True)
 
         if klient:
             query = query.ilike("klienci.nazwa", f"%{klient}%")
@@ -57,29 +48,30 @@ def pobierz_naprawy():
             query = query.eq("status", status)
         if usterka:
             query = query.ilike("usterka", f"%{usterka}%")
+
         response = query.execute()
 
         if response.error:
-            return jsonify({"error": response.error.message}), 500
+        return jsonify({"error": response.error.message}), 500
 
         wyniki = []
-        for row in response.data:
+        for n in response.data:
             wyniki.append({
-                "id": row["id"],
-                "status": row["status"],
-                "data_przyjecia": row["data_przyjecia"],
-                "data_zakonczenia": row["data_zakonczenia"],
-                "usterka": row["usterka"],
-                "opis": row["opis"],
-                "klient": row["klient"]["nazwa"] if row.get("klient") else None,
-                "marka": row["maszyna"]["marka"] if row.get("maszyna") else None,
-                "klasa": row["maszyna"]["klasa"] if row.get("maszyna") else None,
-                "sn": row["maszyna"]["numer_seyjny"] if row.get("maszyna") else None,
+                "id": n["id"],
+                "klient": n["klienci"]["nazwa"],
+                "marka": n["maszyny"]["marka"],
+                "klasa": n["maszyny"]["klasa"],
+                "sn": n["maszyny"]["numer_seryjny"],
+                "status": n["status"],
+                "data_przyjecia": n["data_przyjecia"],
+                "data_zakonczenia": n["data_zakonczenia"],
+                "usterka": n["usterka"],
+                "opis": n["opis"]
             })
 
         return jsonify(wyniki)
-
     except Exception as e:
+        print("Błąd w /naprawy:", e)
         return jsonify({"error": str(e)}), 500
 
 
