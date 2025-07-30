@@ -52,7 +52,7 @@ def pobierz_naprawy():
         response = query.execute()
 
         if response.error:
-        return jsonify({"error": response.error.message}), 500
+            return jsonify({"error": response.error.message}), 500
 
         wyniki = []
         for n in response.data:
